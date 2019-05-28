@@ -1,0 +1,238 @@
+package com.ruikang.menu;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.ruikang.sdajy.R;
+import com.ruikang.util.DBHelperUtil;
+import com.ruikang.util.Langutil;
+import com.ruikang.util.MediaPlaye;
+import com.ruikang.util.PostUtil;
+import com.ruikang.util.PreferenceUtil;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
+
+public class FJCCActivity extends Activity {
+
+	private ImageView btn_back;
+	private TextView tv_info_menu;
+	private Spinner sp_fjcc;
+	private String sp_str;
+	private EditText ed_fjcc_package;
+	private EditText ed_fjcc_num;
+	private TextView num_scanner;
+	private String result;
+	private String package_code;
+	int num = 0;
+	private MediaPlayer mp;
+	
+	Handler mHandler = new Handler(){
+		
+
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case 1:
+				ed_fjcc_num.setEnabled(true);
+				try {
+					
+					
+					JSONObject jo = new JSONObject(result);
+					String state = jo.getString("State");
+					if(state.equals("true")){
+//						mp = MediaPlayer.create(FJCCActivity.this, R.raw.ok);
+//						mp.start();
+						MediaPlaye.ok(mContext);
+						ed_fjcc_num.setText("");
+						ed_fjcc_package.setText("");
+						ed_fjcc_package.setFocusable(true);
+						ed_fjcc_package.setFocusableInTouchMode(true);
+						ed_fjcc_package.requestFocus();
+						ed_fjcc_package.findFocus();
+						Toast.makeText(FJCCActivity.this, "ÒÑ³É¹¦", Toast.LENGTH_SHORT).show();
+						num = num+1;
+						num_scanner.setText(num+"");
+					}else{
+//						mp = MediaPlayer.create(FJCCActivity.this, R.raw.error);
+//						mp.start();
+//						mp.stop();
+						MediaPlaye.error(mContext);
+						ed_fjcc_num.setText("");
+						Toast.makeText(FJCCActivity.this,jo.getString("MsgText"), Toast.LENGTH_SHORT).show();
+					}
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				break;
+
+			default:
+				break;
+			}
+		}};
+	private String nickname;
+	private String wavehouse;
+	private String http;
+	private Context mContext;
+	
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.activity_fjcc);
+		initView();
+		mContext = FJCCActivity.this;
+		SharedPreferences sha = getSharedPreferences("server", Activity.MODE_PRIVATE);
+		String enter = sha.getString("enter", "");
+		String port = sha.getString("port", "");
+		http = "http://"+enter+":"+port+"/pda/fj";
+		OnClick();
+		OnEditorClick();
+	}
+private boolean IsInput = true;
+	private void OnEditorClick() {
+		// TODO Auto-generated method stub
+		ed_fjcc_package.setOnEditorActionListener(new OnEditorActionListener() {
+			@Override
+			public boolean onEditorAction(TextView arg0, int arg1, KeyEvent arg2) {
+				// TODO Auto-generated method stub
+				Log.e("1", arg2+"");
+				if(arg1==0&&arg2.getAction()==KeyEvent.ACTION_DOWN&&IsInput){
+					MediaPlaye.ok(mContext);
+					package_code = ed_fjcc_package.getText().toString();
+					if(package_code.equals("")){
+						mp = MediaPlayer.create(FJCCActivity.this, R.raw.error);
+						mp.start();
+						ed_fjcc_package.setFocusable(true);
+						ed_fjcc_package.setFocusableInTouchMode(true);
+						ed_fjcc_package.requestFocus();
+						ed_fjcc_package.findFocus();
+					}else{
+//						mp = MediaPlayer.create(FJCCActivity.this, R.raw.ok);
+//						mp.start();
+						MediaPlaye.ok(mContext);
+					ed_fjcc_num.setFocusable(true);
+					ed_fjcc_num.setFocusableInTouchMode(true);
+					ed_fjcc_num.requestFocus();
+					ed_fjcc_num.findFocus();
+				}}
+				return true;
+			}
+		});
+		ed_fjcc_num.setOnEditorActionListener(new OnEditorActionListener() {
+			
+			@Override
+			public boolean onEditorAction(TextView arg0, int arg1, KeyEvent arg2) {
+				// TODO Auto-generated method stub
+				Log.e("2", arg2+"");
+				if(arg1==0&&arg2.getAction()==KeyEvent.ACTION_DOWN){
+					ed_fjcc_num.setEnabled(false);
+					
+					final String code = ed_fjcc_num.getText().toString();
+					new Thread(new Runnable() {
+						
+
+						public void run() {
+							Message msg = Message.obtain();
+							URL url;
+							try {
+								url = new URL(http);
+								String data = "out_barcode="+code+"&scan_site="+wavehouse+"&scan_emp="+nickname+
+										"&next_site="+sp_str+"&packno="+package_code;
+								Log.e("data", data);
+								result = PostUtil.loginByPost(url, data);
+								msg.what =1;
+							} catch (MalformedURLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+							mHandler.sendMessage(msg);
+						}}).start();
+				}
+				return true;
+			}
+		});
+	}
+
+	private void OnClick() {
+		// TODO Auto-generated method stub
+		btn_back.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				finish();
+			}
+		});
+		
+		sp_fjcc.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				// TODO Auto-generated method stub
+				DBHelperUtil db =new DBHelperUtil(FJCCActivity.this);
+				SQLiteDatabase dbwriter = db.getWritableDatabase();
+				Cursor c = dbwriter.query(DBHelperUtil.TABLE_NAME, null, null, null, null, null, null);
+				c.moveToPosition(arg2);
+				sp_str = c.getString(c.getColumnIndex(DBHelperUtil.WAVEHOUSE_NAME));
+				Toast.makeText(FJCCActivity.this, sp_str, Toast.LENGTH_SHORT).show();
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+	}
+
+	private void initView() {
+		// TODO Auto-generated method stub
+		btn_back = (ImageView)findViewById(R.id.btn_back);
+		tv_info_menu  = (TextView)findViewById(R.id.tv_info_menu);
+		sp_fjcc = (Spinner)findViewById(R.id.sp_fjcc);
+		ed_fjcc_package = (EditText)findViewById(R.id.ed_fjcc_package);
+		ed_fjcc_num = (EditText)findViewById(R.id.ed_fjcc_num);
+		num_scanner = (TextView)findViewById(R.id.num_scanner);
+		
+		PreferenceUtil.init(FJCCActivity.this);
+		nickname = PreferenceUtil.getString("nickname", "");
+		wavehouse = PreferenceUtil.getString("wavehouse_name", "");
+		tv_info_menu.setText(Langutil.langchange(FJCCActivity.this, R.string.user) + nickname + ","
+				+ Langutil.langchange(FJCCActivity.this, R.string.warehouse) + wavehouse);
+		DBHelperUtil db = new DBHelperUtil(FJCCActivity.this);
+		SQLiteDatabase dbwriter = db.getWritableDatabase();
+		Cursor cursor = dbwriter.query(DBHelperUtil.TABLE_NAME, null, null, null, null, null, null);
+		com.ruikang.util.MySpinnerAdapter ada = new com.ruikang.util.MySpinnerAdapter(FJCCActivity.this, cursor, DBHelperUtil.WAVEHOUSE_NAME);
+		sp_fjcc.setAdapter(ada);
+		
+	}
+
+
+}

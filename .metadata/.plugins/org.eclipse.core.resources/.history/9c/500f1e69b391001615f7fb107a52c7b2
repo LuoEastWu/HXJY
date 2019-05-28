@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="comruikang.x10scanner"
+    android:versionCode="1"
+    android:versionName="1.0.0." >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="21" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/pda_scanner"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        
+       
+        <activity
+            android:name=".SplashActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleTask" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+ 		<receiver android:name=".BootBroadcastReciver" >
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <category android:name="android.intent.category.HOME" />
+        </intent-filter>
+  		  </receiver>
+        
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/title_activity_splash"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask" >
+        </activity>
+        <activity
+            android:name=".MenuActivity"
+            android:label="@string/title_activity_menu"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.ShoujianActivity"
+            android:label="@string/title_activity_shoujian"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.FajianActivity"
+            android:label="@string/title_activity_fajian"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.DaojianActivity"
+            android:label="@string/title_activity_daojian"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.PaijianActivity"
+            android:label="@string/title_activity_paijian"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.ProblempackActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|"
+            android:label="@string/title_activity_problempack"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.SignActivity"
+            android:label="@string/title_activity_sign"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name="comruikang.menuactivity.SearchActivity"
+            android:label="@string/title_activity_search"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" 
+            android:windowSoftInputMode="stateAlwaysHidden" >
+        </activity>
+        <activity
+            android:name=".SettingActivity"
+            android:launchMode="singleTask"
+            android:label="@string/title_activity_setting"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="comruikang.settingActivity.Version_changeActivity"
+            android:label="@string/title_activity_version_change"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="comruikang.settingActivity.Server_SelectActivity"
+            android:label="@string/title_activity_server__select"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name="comruikang.settingActivity.Station_changeActivity"
+            android:label="@string/title_activity_station_change"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:name=".CameraWare"
+            android:label="@string/title_activity_camera_ware" >
+        </activity>
+        <activity android:name="comruikang.settingActivity.Scanner_Code" />
+    </application>
+
+</manifest>

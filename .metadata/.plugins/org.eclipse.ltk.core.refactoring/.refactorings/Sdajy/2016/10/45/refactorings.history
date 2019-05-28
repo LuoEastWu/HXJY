@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Convert local variable &apos;com.ruikang.sdajy.MainActivity.loadLogo().new Runnable() {...}.run().file&apos; in &apos;com.ruikang.sdajy.MainActivity.loadLogo().new Runnable() {...}.run()&apos; to field&#x0D;&#x0A;- Original project: &apos;Sdajy&apos;&#x0D;&#x0A;- Original element: &apos;com.ruikang.sdajy.MainActivity.loadLogo().new Runnable() {...}.run().file&apos;&#x0D;&#x0A;- Field name: &apos;file&apos;&#x0D;&#x0A;- Initialize field in method&#x0D;&#x0A;- Declared visibility: &apos;private&apos;" description="Convert local variable &apos;file&apos; to field" final="false" flags="2" id="org.eclipse.jdt.ui.promote.temp" initialize="1" input="/src&lt;com.ruikang.sdajy{MainActivity.java" name="file" selection="8232 74" stamp="1477897999862" static="false" version="1.0" visibility="2"/>
+</session>

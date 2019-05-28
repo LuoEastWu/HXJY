@@ -1,0 +1,14 @@
+
+public class TY {
+	public static void main(String[] args) {
+		int a = 3;
+		int b = 3;
+		inta(a+b);
+		System.out.println(a);
+	}
+	
+	public static void inta(int b) {
+		
+		System.out.println(b);
+	}
+}

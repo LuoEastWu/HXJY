@@ -1,0 +1,195 @@
+package com.ruikang.menu;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.ruikang.sdajy.R;
+import com.ruikang.util.DBHelperUtil;
+import com.ruikang.util.Langutil;
+import com.ruikang.util.MySpinnerAdapter;
+import com.ruikang.util.PostUtil;
+import com.ruikang.util.PreferenceUtil;
+
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.media.MediaPlayer;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
+
+public class KDYJDActivity extends Activity {
+
+	private TextView tv_info_menu;
+	private ImageView btn_back;
+	private Spinner sp_kdyjd;
+	private EditText ed_kdyjd_num;
+	private TextView tv_kdyjd_num;
+	private String result;
+	private String billcode;
+	private String str_sp;
+	int num = 0;
+	private MediaPlayer mp;
+	Handler mhandler = new Handler() {
+		
+
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case 1:
+				Log.e("12122", result);
+				try {
+					JSONObject jo = new JSONObject(result);
+					String state = jo.getString("State");
+					if(state.equals("true")){
+						num = num+1;
+						tv_kdyjd_num.setText(""+num);
+						mp = MediaPlayer.create(KDYJDActivity.this, R.raw.ok);
+						mp.start();
+						ed_kdyjd_num.setText("");
+						Toast.makeText(KDYJDActivity.this,billcode+"交单成功", Toast.LENGTH_SHORT).show();
+					}else{
+						Toast.makeText(KDYJDActivity.this,jo.getString("MsgText"), Toast.LENGTH_SHORT).show();
+						ed_kdyjd_num.setText("");
+						mp = MediaPlayer.create(KDYJDActivity.this, R.raw.error);
+						mp.start();
+						tv_kdyjd_num.setText(""+num);
+					}
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				ed_kdyjd_num.setEnabled(true);
+				break;
+
+			default:
+				break;
+			}
+		}};
+	private SQLiteDatabase dbwriter;
+	private Cursor cursor;
+	private DBHelperUtil db;
+	private String nickname;
+	private String wavehouse;
+	private String http;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.activity_kdyjd);
+		initView();
+		SharedPreferences sha = getSharedPreferences("server", Activity.MODE_PRIVATE);
+		String enter = sha.getString("enter", "");
+		String port = sha.getString("port", "");
+		http = "http://"+enter+":"+port;
+		OnClick();
+		OnEditorClick();
+	}
+
+	private void OnEditorClick() {
+		// TODO Auto-generated method stub
+		ed_kdyjd_num.setOnEditorActionListener(new OnEditorActionListener() {
+			
+			
+
+			@Override
+			public boolean onEditorAction(TextView arg0, int arg1, KeyEvent arg2) {
+				// TODO Auto-generated method stub
+				if (arg1 == 0 && arg2.getAction() == KeyEvent.ACTION_DOWN) {
+					billcode = ed_kdyjd_num.getText().toString();
+					ed_kdyjd_num.setEnabled(false);
+					if(billcode.equals("")){
+						
+					}else{
+					new Thread(new Runnable() {
+						
+
+						public void run() {
+							Message msg = Message.obtain();
+							URL url;
+							try {
+								url = new URL(http+"/pda/KD_jd");
+								String data = "KD_com="+str_sp+"&billcode="+billcode+"&scan_site="+wavehouse+"&scan_emp="+nickname;
+								result = PostUtil.loginByPost(url, data);
+								msg.what = 1;
+							} catch (MalformedURLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							mhandler.sendMessage(msg);
+						}
+						}).start();
+				}}
+				return true;
+			}
+		});
+	}
+
+	private void OnClick() {
+		// TODO Auto-generated method stub
+		btn_back.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				finish();
+			}
+		});
+		
+		sp_kdyjd.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				// TODO Auto-generated method stub
+				cursor.moveToPosition(arg2);
+				str_sp = cursor.getString(cursor.getColumnIndex(DBHelperUtil.WAVEHOUSE_NAME1));
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+	}
+
+	private void initView() {
+		// TODO Auto-generated method stub
+		tv_info_menu = (TextView)findViewById(R.id.tv_info_menu);
+		btn_back = (ImageView)findViewById(R.id.btn_back);
+		sp_kdyjd = (Spinner)findViewById(R.id.sp_kdyjd);
+		ed_kdyjd_num = (EditText)findViewById(R.id.ed_kdyjd_num);
+		tv_kdyjd_num = (TextView)findViewById(R.id.tv_kdyjd_num);
+		db = new DBHelperUtil(KDYJDActivity.this);
+		dbwriter = db.getWritableDatabase();
+		cursor = dbwriter.query(DBHelperUtil.TABLE_NAME1, null, null, null, null, null, null);
+		MySpinnerAdapter ada = new MySpinnerAdapter(KDYJDActivity.this, cursor, DBHelperUtil.WAVEHOUSE_NAME1);
+		sp_kdyjd.setAdapter(ada);
+		PreferenceUtil.init(KDYJDActivity.this);
+		nickname = PreferenceUtil.getString("nickname", "");
+		wavehouse = PreferenceUtil.getString("wavehouse_name", "");
+		tv_info_menu.setText(Langutil.langchange(KDYJDActivity.this, R.string.user) + nickname + ","
+				+ Langutil.langchange(KDYJDActivity.this, R.string.warehouse) + wavehouse);
+	}
+
+	
+
+}

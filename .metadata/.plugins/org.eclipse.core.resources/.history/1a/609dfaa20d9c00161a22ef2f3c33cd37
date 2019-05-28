@@ -1,0 +1,73 @@
+package com.exmple.test;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+	private TextView textView1;
+	private Button button2;
+	private Button button1;
+	private Handler handler;
+	private TextView textView2;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		textView1 = (TextView)findViewById(R.id.textView1);
+		textView2 = (TextView)findViewById(R.id.textView2);
+		button2 = (Button)findViewById(R.id.button2);
+		button1 = (Button)findViewById(R.id.button1);
+		handler = new Handler();
+		button1.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				new Thread(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(10000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						handler.post(new Runnable() {
+							public void run() {
+								textView1.setText("123");
+							}
+						});
+					}
+				}).start();
+			}
+		});
+	
+	button2.setOnClickListener(new OnClickListener() {
+		
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				new Thread(new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(10000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						handler.pos
+					}
+				}).start();
+			}
+		});
+	}
+
+	
+
+}

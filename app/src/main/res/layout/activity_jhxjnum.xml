@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="jyxt.rcominfo.com.jyxt.Activity.JHXJActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#e9e7ef"
+        android:orientation="horizontal" >
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/back" />
+
+        <TextView
+            android:id="@+id/tv_info_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"
+            android:textSize="20sp"
+            android:text=" 仓库：东莞仓，用户：许一早" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="5dp"
+        android:weightSum="6" >
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:textSize="25sp"
+            android:text="@string/out_express_num" />
+
+        <EditText
+            android:id="@+id/ed_jhxj_parentnum"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="4"
+            android:textSize="25sp"
+            android:background="@android:drawable/edit_text"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:imeOptions="actionNone"/>
+    </LinearLayout>
+    <HorizontalScrollView
+        android:layoutDirection="ltr"
+        android:fillViewport="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ListView
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:dividerHeight="1px"
+            android:divider="#FF909090"
+            android:background="@android:drawable/edit_text"
+            android:id="@+id/lv_jhxj"></ListView>
+    </HorizontalScrollView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="5dp"
+        android:weightSum="5"
+        >
+        <TextView
+            android:layout_width="0dp"
+            android:textSize="25sp"
+            android:layout_height="wrap_content"
+            android:text="@string/find_package"
+            android:layout_weight="2"/>
+        <EditText
+            android:layout_width="0dp"
+            android:textSize="25sp"
+            android:background="@android:drawable/edit_text"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:singleLine="true"
+            android:imeOptions="actionNone"
+            android:id="@+id/ed_jhxj_find"/>
+    </LinearLayout>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textSize="20sp"
+        android:id="@+id/tv_count_zidan"
+        android:gravity="center"/>
+
+
+</LinearLayout>

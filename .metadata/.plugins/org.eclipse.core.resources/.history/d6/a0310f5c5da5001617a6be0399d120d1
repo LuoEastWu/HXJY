@@ -1,0 +1,622 @@
+package comruikang.x10scanner;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.lidroid.xutils.http.RequestParams;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.SyncStateContract.Helpers;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.GridView;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import comruikang.menuactivity.DaojianActivity;
+import comruikang.menuactivity.FajianActivity;
+import comruikang.menuactivity.PaijianActivity;
+import comruikang.menuactivity.ProblempackActivity;
+import comruikang.menuactivity.SearchActivity;
+import comruikang.menuactivity.ShoujianActivity;
+import comruikang.menuactivity.SignActivity;
+import comruikang.utils.FileHelper;
+import comruikang.utils.JsonUtil;
+import comruikang.utils.Langutil;
+import comruikang.utils.Post;
+import comruikang.utils.Upl;
+import comruikang.utils.X10DB;
+
+public class MenuActivity extends Activity {
+	private GridView gv_menu;
+	private TextView tv_user;
+	private Cursor c;
+	private Message msg;
+	private SimpleAdapter sim_adapter;
+	private List<Map<String, Object>> data_list;
+	private int[] icon = { R.drawable.img_new, R.drawable.img_send, R.drawable.img_in, R.drawable.img_send,
+			R.drawable.img_errorpack, R.drawable.img_sign, R.drawable.img_upload, R.drawable.img_search };
+
+	
+	private Intent in;
+	private ProgressDialog p;
+	private String name;
+	private FileHelper halper;
+	private X10DB db;
+	private SQLiteDatabase dbWriter;
+	private String result_daojian;
+	private String result_shoujian;
+	private String result_paijian;
+	private String result_fajian;
+	private String result_wentijian;
+	private String result_qianshou;
+	private String result_wentijian_tp;
+	private String result_qianshou_tp;
+
+	private Handler mHandler = new Handler() {
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case 1:
+				break;
+			case 2:
+				break;
+			case 3:
+				p.dismiss();
+				new AlertDialog.Builder(MenuActivity.this).setTitle(Langutil.langchange(MenuActivity.this, R.string.upload_back))
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.daojian_upload) + result_daojian, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.shoujian_upload) + result_shoujian, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.paijian_upload) + result_paijian, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.fajian_upload) + result_fajian, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.wentijian_upload) + result_wentijian, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.qianshou_upload) + result_qianshou, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.wentijian_pic_upload) + result_wentijian_tp, Toast.LENGTH_SHORT).show();
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.sign_pic_upload) + result_qianshou_tp, Toast.LENGTH_SHORT).show();
+				break;
+			case 5:
+				Toast.makeText(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.part_download_error), Toast.LENGTH_SHORT).show();
+			}
+		}
+	};
+	private SharedPreferences sha;
+	private String http_upload;
+	private File file_wentijian;
+	private File file_daojian;
+	private File file_shoujian;
+	private File file_fajian;
+	private File file_qianshou;
+	private File file_paijian;
+	private String code_scanner;
+	private String path_server;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.activity_menu);
+		intiView();
+		result_daojian=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_shoujian=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_paijian=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_fajian=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_wentijian=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_qianshou=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_wentijian_tp=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		result_qianshou_tp=Langutil.langchange(MenuActivity.this, R.string.no_file_upload);
+		
+		sha = getSharedPreferences("server", MODE_PRIVATE);
+		String http_upload_server = sha.getString("upload_server", "");
+		String http_upload_port = sha.getString("upload_port", "");
+		http_upload = "http://" + http_upload_server + ":" + http_upload_port + "/Service1.asmx/up_scan_file";
+		sha = getSharedPreferences("code_scanner", MODE_PRIVATE);
+		code_scanner = sha.getString("code_this_scanner", "");
+		addView();
+		Onclick();
+
+	}
+
+	private void Onclick() {
+		gv_menu.setOnItemClickListener(new OnItemClickListener() {
+
+			
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+
+				switch (arg2) {
+				case 0:
+					in = new Intent(MenuActivity.this, ShoujianActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 1:
+					in = new Intent(MenuActivity.this, FajianActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 2:
+					in = new Intent(MenuActivity.this, DaojianActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 3:
+					in = new Intent(MenuActivity.this, PaijianActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 4:
+					in = new Intent(MenuActivity.this, ProblempackActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 5:
+					in = new Intent(MenuActivity.this, SignActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+				case 6:
+					 p = ProgressDialog.show(MenuActivity.this, Langutil.langchange(MenuActivity.this, R.string.downloading), 
+		                		Langutil.langchange(MenuActivity.this, R.string.please_wait), true, false);
+					
+					msg = Message.obtain();
+					halper = new FileHelper(MenuActivity.this);
+					c = dbWriter.query(X10DB.TABLE_NAME_2, null, null, null, null, null, null);
+					String shoujian = "";
+					if (c.getCount() > 0) {
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_1));
+							String no_shoujian = "01";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_1));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_1));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_1));
+							shoujian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~~~~\r\n";
+						}
+
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_1));
+							String no_shoujian = "01";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_1));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_1));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_1));
+							shoujian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~~~~\r\n";
+						}
+
+						try {
+							System.out.println(shoujian);
+							halper = new FileHelper(MenuActivity.this);
+							file_shoujian = halper.createSDFile("01", code_scanner + ".txt");
+							halper.writeSDFile(shoujian, file_shoujian);
+							msg.what = 2;
+
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+
+					c = dbWriter.query(X10DB.TABLE_NAME_3, null, null, null, null, null, null);
+					String fajian = "";
+					if (c.getCount() > 0) {
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_2));
+							String no_shoujian = "02";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_2));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_2));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_2));
+							String next_stop = c.getString(c.getColumnIndex(X10DB.NEXT_STOP));
+							fajian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~" + next_stop + "~~~~~~\r\n";
+						}
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_2));
+							String no_shoujian = "02";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_2));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_2));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_2));
+							String next_stop = c.getString(c.getColumnIndex(X10DB.NEXT_STOP));
+							fajian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~" + next_stop + "~~~~~~\r\n";
+						}
+
+						System.out.println(fajian);
+
+						try {
+							halper = new FileHelper(MenuActivity.this);
+							file_fajian = halper.createSDFile("02", code_scanner + ".txt");
+							halper.writeSDFile(fajian, file_fajian);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
+					c = dbWriter.query(X10DB.TABLE_NAME_4, null, null, null, null, null, null);
+					String daojian = "";
+					if (c.getCount() > 0) {
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_3));
+							String no_shoujian = "03";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_3));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_3));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_3));
+							String pre_stop = c.getString(c.getColumnIndex(X10DB.PRE_STOP));
+							daojian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~" + pre_stop + "~~~~~~\r\n";
+						}
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_3));
+							String no_shoujian = "03";
+							String time_shoujian = c.getString(c.getColumnIndex(X10DB.TIME_3));
+							String site_shoujian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_3));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_3));
+							String pre_stop = c.getString(c.getColumnIndex(X10DB.PRE_STOP));
+							daojian += t_no + "~" + no_shoujian + "~" + time_shoujian + "~" + site_shoujian + "~"
+									+ scan_name + "~~~" + pre_stop + "~~~~~~\r\n";
+						}
+
+						System.out.println(daojian);
+						try {
+							halper = new FileHelper(MenuActivity.this);
+							file_daojian = halper.createSDFile("03", code_scanner + ".txt");
+							halper.writeSDFile(daojian, file_daojian);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+
+					c = dbWriter.query(X10DB.TABLE_NAME_5, null, null, null, null, null, null);
+					if (c.getCount() > 0) {
+
+						String paijian = "";
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_4));
+							String no_paijian = "04";
+							String time_paijian = c.getString(c.getColumnIndex(X10DB.TIME_4));
+							String site_paijian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_4));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_4));
+							paijian += t_no + "~" + no_paijian + "~" + time_paijian + "~" + site_paijian + "~"
+									+ scan_name + "~~~~~~\r\n";
+						}
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_4));
+							String no_paijian = "04";
+							String time_paijian = c.getString(c.getColumnIndex(X10DB.TIME_4));
+							String site_paijian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_4));
+							String scan_name = c.getString(c.getColumnIndex(X10DB.SCANNER_4));
+							paijian += t_no + "~" + no_paijian + "~" + time_paijian + "~" + site_paijian + "~"
+									+ scan_name + "~~~~~~\r\n";
+						}
+
+						System.out.println(paijian);
+
+						try {
+							halper = new FileHelper(MenuActivity.this);
+							file_paijian = halper.createSDFile("04", code_scanner + ".txt");
+							Log.e("aaaaaa", paijian);
+							halper.writeSDFile(paijian, file_paijian);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+
+					c = dbWriter.query(X10DB.TABLE_NAME_7, null, null, null, null, null, null);
+					if (c.getCount() > 0) {
+						String wentijian = "";
+						sha = getSharedPreferences("path_save", MODE_PRIVATE);
+						path_server = sha.getString("path", "");
+
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_5));
+							String no_paijian = "98";
+							String time_wentijian = c.getString(c.getColumnIndex(X10DB.TIME_5));
+							String site_wentijian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_5));
+							String scanner_wentijian = c.getString(c.getColumnIndex(X10DB.SCANNER_5));
+							String content = c.getString(c.getColumnIndex(X10DB.CONTENT_1));
+							String photo_wentijian = c.getString(c.getColumnIndex(X10DB.PHOTOFILE));
+							String filename = photo_wentijian.substring(photo_wentijian.lastIndexOf("/") + 1);
+							wentijian += t_no + "~" + no_paijian + "~" + time_wentijian + "~" + site_wentijian + "~"
+									+ scanner_wentijian + "~~~~~" + content + "~" + path_server + "wtj\\" + filename
+									+ "\r\n";
+						}
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_5));
+							String no_paijian = "98";
+							String time_wentijian = c.getString(c.getColumnIndex(X10DB.TIME_5));
+							String site_wentijian = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_5));
+							String scanner_wentijian = c.getString(c.getColumnIndex(X10DB.SCANNER_5));
+							String content = c.getString(c.getColumnIndex(X10DB.CONTENT_1));
+							String photo_wentijian = c.getString(c.getColumnIndex(X10DB.PHOTOFILE));
+							String filename = photo_wentijian.substring(photo_wentijian.lastIndexOf("/") + 1);
+							wentijian += t_no + "~" + no_paijian + "~" + time_wentijian + "~" + site_wentijian + "~"
+									+ scanner_wentijian + "~~~~~" + content + "~" + path_server + "wtj\\" + filename
+									+ "\r\n";
+						}
+
+						try {
+							halper = new FileHelper(MenuActivity.this);
+							file_wentijian = halper.createSDFile("98", code_scanner + ".txt");
+							Log.e("aaaaaa", "qianshou" + wentijian);
+							halper.writeSDFile(wentijian, file_wentijian);
+							halper.readSDFile(file_wentijian);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+
+					c = dbWriter.query(X10DB.TABLE_NAME_8, null, null, null, null, null, null);
+					if (c.getCount() > 0) {
+						String qianshou = "";
+						sha = getSharedPreferences("path_save", MODE_PRIVATE);
+						path_server = sha.getString("path", "");
+
+						if (c.moveToFirst()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+							String no_paijian = "99";
+							String time_qianshou = c.getString(c.getColumnIndex(X10DB.TIME_6));
+							String site_qianshou = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_6));
+							String scanner_qianshou = c.getString(c.getColumnIndex(X10DB.SCANNER_6));
+							String photo_qianshou = c.getString(c.getColumnIndex(X10DB.PHOTOFILE_2));
+							String filename = photo_qianshou.substring(photo_qianshou.lastIndexOf("/") + 1);
+							qianshou += t_no + "~" + no_paijian + "~" + time_qianshou + "~" + site_qianshou + "~"
+									+ scanner_qianshou + "~~~~~~" + path_server + "qs\\" + getTime() + "\\" + filename
+									+ "\r\n";
+						}
+
+						while (c.moveToNext()) {
+							String t_no = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+							String no_paijian = "99";
+							String time_qianshou = c.getString(c.getColumnIndex(X10DB.TIME_6));
+							String site_qianshou = c.getString(c.getColumnIndex(X10DB.SCAN_STATION_6));
+							String scanner_qianshou = c.getString(c.getColumnIndex(X10DB.SCANNER_6));
+							String photo_qianshou = c.getString(c.getColumnIndex(X10DB.PHOTOFILE_2));
+							String filename = photo_qianshou.substring(photo_qianshou.lastIndexOf("/") + 1);
+							qianshou += t_no + "~" + no_paijian + "~" + time_qianshou + "~" + site_qianshou + "~"
+									+ scanner_qianshou + "~~~~~~" + path_server + "qs\\" + getTime() + "\\" + filename
+									+ "\r\n";
+						}
+
+						try {
+							halper = new FileHelper(MenuActivity.this);
+							file_qianshou = halper.createSDFile("99", code_scanner + ".txt");
+							Log.e("aaaaaa", "qianshou" + qianshou);
+							halper.writeSDFile(qianshou, file_qianshou);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					new Thread(new Runnable() {
+
+						@Override
+						public void run() {
+							
+							String TYPE_TEXT = "txt";
+							String TYPE_PIC_SIGN = "qs_jpg";
+							String TYPE_PIC_WTJ = "wtj_jpg";
+
+							c = dbWriter.query(X10DB.TABLE_NAME_7, null, null, null, null, null, null);
+							if (c.moveToFirst()) {
+								String path = c.getString(c.getColumnIndex(X10DB.PHOTOFILE));
+								String id = c.getString(c.getColumnIndex(X10DB.ID_7));
+								File file = new File(path);
+								String filename = path.substring(path.lastIndexOf("/") + 1);
+								String billnum = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+								result_wentijian_tp = Upl.uploadFile(http_upload, path,
+										new JsonUtil().jsoncreate(TYPE_PIC_WTJ, filename, billnum, null).toString());
+								if (result_wentijian_tp.equals("ok")) {
+									file.delete();
+									dbWriter.delete(X10DB.TABLE_NAME_7, "_id=" + id, null);
+								}else{
+									msg.what =5;
+								}
+								Log.e("123", path);
+							} else {
+								while (c.moveToNext()) {
+									String path = c.getString(c.getColumnIndex(X10DB.PHOTOFILE));
+									File file = new File(path);
+									String id = c.getString(c.getColumnIndex(X10DB.ID_7));
+									String filename = path.substring(path.lastIndexOf("/") + 1);
+									String billnum = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+									result_wentijian_tp = Upl.uploadFile(http_upload, path, new JsonUtil()
+											.jsoncreate(TYPE_PIC_WTJ, filename, billnum, null).toString());
+									if (result_wentijian_tp.equals("ok")) {
+										file.delete();
+										dbWriter.delete(X10DB.TABLE_NAME_7, "_id=" + id, null);
+									}else{
+										msg.what =5;
+									}
+									Log.e("123", path);
+								}
+							}
+
+							c = dbWriter.query(X10DB.TABLE_NAME_8, null, null, null, null, null, null);
+							if (c.moveToFirst()) {
+								String path = c.getString(c.getColumnIndex(X10DB.PHOTOFILE_2));
+								File file = new File(path);
+								String id = c.getString(c.getColumnIndex(X10DB.ID_8));
+								String billnum = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+								String filename = path.substring(path.lastIndexOf("/") + 1);
+								result_qianshou_tp = Upl.uploadFile(http_upload, path,
+										new JsonUtil().jsoncreate(TYPE_PIC_SIGN, filename, billnum, null).toString());
+								if (result_qianshou_tp.equals("ok")) {
+									file.delete();
+									dbWriter.delete(X10DB.TABLE_NAME_8, "_id=" + id, null);
+								}else{
+									msg.what =5;
+								}
+							}
+							while (c.moveToNext()) {
+								String path = c.getString(c.getColumnIndex(X10DB.PHOTOFILE_2));
+								File file = new File(path);
+								String id = c.getString(c.getColumnIndex(X10DB.ID_8));
+								String billnum = c.getString(c.getColumnIndex(X10DB.TRACKING_NO_6));
+								String filename = path.substring(path.lastIndexOf("/") + 1);
+								result_qianshou_tp = Upl.uploadFile(http_upload, path,
+										new JsonUtil().jsoncreate(TYPE_PIC_SIGN, filename, billnum, null).toString());
+								Log.e("123", path);
+								if (result_qianshou_tp.equals("ok")) {
+									file.delete();
+									dbWriter.delete(X10DB.TABLE_NAME_8, "_id=" + id, null);
+								}else{
+									msg.what =5;
+								}
+
+							}
+
+							if (file_shoujian != null) {
+								String shoujian_file = file_shoujian.getAbsolutePath().toString();
+								String filename_shoujian = shoujian_file.substring(shoujian_file.lastIndexOf("/") + 1);
+								result_shoujian = Upl.uploadFile(http_upload, shoujian_file,
+										new JsonUtil().jsoncreate(TYPE_TEXT, filename_shoujian, null, null).toString());
+								halper.deleteSDFile(file_shoujian);
+								if (result_shoujian.equals("ok")) {
+									dbWriter.delete(X10DB.TABLE_NAME_2, null, null);
+
+								}
+							}
+							if (file_fajian != null) {
+								String fajian_file = file_fajian.getAbsolutePath().toString();
+								String filename_fajian = fajian_file.substring(fajian_file.lastIndexOf("/") + 1);
+								result_fajian = Upl.uploadFile(http_upload, fajian_file,
+										new JsonUtil().jsoncreate(TYPE_TEXT, filename_fajian, null, null).toString());
+								if (result_fajian.equals("ok")) {
+									dbWriter.delete(X10DB.TABLE_NAME_3, null, null);
+								}
+								halper.deleteSDFile(file_fajian);
+							}
+							if (file_daojian != null) {
+								String daojian_file = file_daojian.getAbsolutePath().toString();
+								String filename_daojian = daojian_file.substring(daojian_file.lastIndexOf("/") + 1);
+								result_daojian = Upl.uploadFile(http_upload, daojian_file,
+										new JsonUtil().jsoncreate(TYPE_TEXT, filename_daojian, null, null).toString());
+								if (result_daojian.equals("ok")) {
+									dbWriter.delete(X10DB.TABLE_NAME_4, null, null);
+								}
+								halper.deleteSDFile(file_daojian);
+							}
+							if (file_paijian != null) {
+								String paijian_file = file_paijian.getAbsolutePath().toString();
+								String filename_paijian = paijian_file.substring(paijian_file.lastIndexOf("/") + 1);
+								result_paijian = Upl.uploadFile(http_upload, paijian_file,
+										new JsonUtil().jsoncreate(TYPE_TEXT, filename_paijian, null, null).toString());
+								if (result_paijian.equals("ok")) {
+									dbWriter.delete(X10DB.TABLE_NAME_5, null, null);
+								}
+								halper.deleteSDFile(file_paijian);
+							}
+							if (file_wentijian != null) {
+								c = dbWriter.query(X10DB.TABLE_NAME_7, null, null, null, null, null, null);
+								String wentijian_file = file_wentijian.getAbsolutePath().toString();
+								String filename_wentijian = wentijian_file
+										.substring(wentijian_file.lastIndexOf("/") + 1);
+								result_wentijian = Upl.uploadFile(http_upload, wentijian_file, new JsonUtil()
+										.jsoncreate(TYPE_TEXT, filename_wentijian, null, null).toString());
+								if (result_wentijian.equals("ok") && c.getCount() == 0) {
+									dbWriter.delete(X10DB.TABLE_NAME_7, null, null);
+								}
+								halper.deleteSDFile(file_wentijian);
+							}
+							c = dbWriter.query(X10DB.TABLE_NAME_8, null, null, null, null, null, null);
+							if (file_qianshou != null) {
+								String qianshou_file = file_qianshou.getAbsolutePath().toString();
+								String filename_qianshou = qianshou_file.substring(qianshou_file.lastIndexOf("/") + 1);
+								result_qianshou = Upl.uploadFile(http_upload, qianshou_file,
+										new JsonUtil().jsoncreate(TYPE_TEXT, filename_qianshou, null, null).toString());
+								if (result_qianshou.equals("ok")&&c.getCount()==0) {
+									dbWriter.delete(X10DB.TABLE_NAME_8, null, null);
+								}
+								halper.deleteSDFile(file_qianshou);
+							}
+
+							msg.what = 3;
+							mHandler.sendMessage(msg);
+						}
+					}).start();
+					break;
+				case 7:
+					in = new Intent(MenuActivity.this, SearchActivity.class);
+					in.putExtra("usern", name);
+					startActivity(in);
+					break;
+
+				default:
+					break;
+				}
+			}
+
+		});
+	}
+
+	private void addView() {
+		data_list = new ArrayList<Map<String, Object>>();
+		getData();
+		String[] from = { "image", "text" };
+		int[] to = { R.id.iv_gridimg, R.id.iv_gridtext };
+		sim_adapter = new SimpleAdapter(this, data_list, R.layout.gridviewlayout, from, to);
+		gv_menu.setAdapter(sim_adapter);
+	}
+
+	private void intiView() {
+		name = getIntent().getStringExtra("usern");
+		gv_menu = (GridView) findViewById(R.id.gv_menu);
+		tv_user = (TextView) findViewById(R.id.text_user);
+		tv_user.setText(Langutil.langchange(MenuActivity.this, R.string.main_menu) + "<" + name + ">");
+		db = new X10DB(this);
+		dbWriter = db.getWritableDatabase();
+
+	}
+
+	public List<Map<String, Object>> getData() {
+		String[] icon_name = { Langutil.langchange(MenuActivity.this, R.string.shoujian),
+				Langutil.langchange(MenuActivity.this, R.string.fajian), Langutil.langchange(MenuActivity.this, R.string.daojian), 
+				Langutil.langchange(MenuActivity.this, R.string.paijian), 
+				Langutil.langchange(MenuActivity.this, R.string.wentijian), Langutil.langchange(MenuActivity.this, R.string.qianshou), 
+				Langutil.langchange(MenuActivity.this, R.string.upload), Langutil.langchange(MenuActivity.this, R.string.search) };
+		for (int i = 0; i < icon.length; i++) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("image", icon[i]);
+			map.put("text", icon_name[i]);
+			data_list.add(map);
+		}
+
+		return data_list;
+	}
+
+	private String getTime() {
+		SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
+		Date curDate = new Date();
+		String str = format.format(curDate);
+		return str;
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+
+		if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+			Intent in = new Intent(MenuActivity.this, MainActivity.class);
+			startActivity(in);
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+
+}

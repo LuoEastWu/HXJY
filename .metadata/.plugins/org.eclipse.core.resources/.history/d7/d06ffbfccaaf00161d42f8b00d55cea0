@@ -1,0 +1,435 @@
+package com.ruikang.menu;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.ruikang.sdajy.R;
+import com.ruikang.util.Langutil;
+import com.ruikang.util.MediaPlaye;
+import com.ruikang.util.MyAdapter;
+import com.ruikang.util.PostUtil;
+import com.ruikang.util.PreferenceUtil;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.media.MediaPlayer;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.TextView.OnEditorActionListener;
+
+public class SZJHXJActivity extends Activity {
+	List<String> billnum;
+	List<String> kuwei;
+	List<String> num;
+	List<String> agent;
+	private String bill;
+	List<String> weight;
+	List<String> shangjia;
+	private TextView tv_info_menu;
+	JSONObject jo;
+	private ImageView btn_back;
+	private String result_jhxj;
+	private String emp;
+	private String site;
+	private String result_last;
+	private Message msg;
+	private EditText ed_jhxj_parentnum;
+	private ListView lv_jhxj;
+	boolean b = false;
+	private EditText ed_jhxj_find;
+	private MediaPlayer mp;
+	private String parent_num;
+	private Context mContext = SZJHXJActivity.this;
+
+	@SuppressLint("HandlerLeak")
+	Handler mhandler = new Handler() {
+		private MediaPlayer mp;
+
+		@SuppressWarnings("unused")
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case 1:
+				ed_jhxj_parentnum.setEnabled(true);
+				ed_jhxj_find.setEnabled(true);
+				try {
+					Log.e("`1111111", "111111");
+					jo = new JSONObject(result_jhxj);
+					String bool = jo.getString("State");
+					Log.e("1111", bool);
+					if (bool.equals("true")) {
+//						mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.ok);
+//						mp.start();
+						MediaPlaye.ok(mContext);
+						billnum.clear();
+						kuwei.clear();
+						num.clear();
+						agent.clear();
+						weight.clear();
+						shangjia.clear();
+						billnum.add("快递单号");
+						kuwei.add("库位号");
+						num.add("数量");
+						agent.add("客户");
+						weight.add("实重");
+						shangjia.add("上架");
+						String ja1 = jo.getString("JsonText");
+						JSONArray ja = new JSONArray(ja1);
+						Log.e("112121212", ja1);
+						for (int i = 0; i < ja.length(); i++) {
+							JSONObject jo1 = (JSONObject) ja.get(i);
+							String bill = jo1.getString("kd_billcode");
+							Log.e("121212", bill);
+							String kuwe = jo1.getString("stock_area");
+							String num_0 = jo1.getString("number");
+							String agent1 = jo1.getString("username");
+							String weight1 = jo1.getString("dd_weight2");
+							String shangjia1 = jo1.getString("is_inplace");
+							billnum.add(bill);
+							kuwei.add(kuwe);
+							num.add(num_0);
+							agent.add(agent1);
+							weight.add(weight1);
+							shangjia.add(shangjia1);
+						}
+
+						ed_jhxj_find.setFocusable(true);
+						ed_jhxj_find.setFocusableInTouchMode(true);
+						ed_jhxj_find.requestFocus();
+						ed_jhxj_find.findFocus();
+						adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+						lv_jhxj.setAdapter(adapter);
+						Toast.makeText(SZJHXJActivity.this, parent_num + "下共有" + (billnum.size() - 1) + "条数据",
+								Toast.LENGTH_SHORT).show();
+						scan_count.setText(parent_num + "下共有" + (billnum.size() - 1) + "条数据");
+					} else if (bool.equals("false")) {
+
+//						mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//						mp.start();
+						MediaPlaye.error(mContext);
+						String message = jo.getString("MsgText");
+						Toast.makeText(SZJHXJActivity.this, message, Toast.LENGTH_SHORT).show();
+						ed_jhxj_parentnum.setText("");
+
+					}
+
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				Log.e("111111", result_jhxj);
+
+				break;
+			case 2:
+//				mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.ok);
+//				mp.start();
+				MediaPlaye.ok(mContext);
+//				Toast.makeText(SZJHXJActivity.this, "子单号全部下架成功", Toast.LENGTH_SHORT).show();
+				Toast.makeText(JHXJActivity.this, result_last, Toast.LENGTH_SHORT).show();
+				ed_jhxj_find.setText("");
+				billnum.clear();
+				kuwei.clear();
+				agent.clear();
+				weight.clear();
+				shangjia.clear();
+				num.clear();
+				adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+				lv_jhxj.setAdapter(adapter);
+				ed_jhxj_parentnum.setEnabled(true);
+				ed_jhxj_find.setEnabled(true);
+				ed_jhxj_parentnum.setFocusable(true);
+				ed_jhxj_parentnum.setFocusableInTouchMode(true);
+				ed_jhxj_parentnum.requestFocus();
+				ed_jhxj_parentnum.findFocus();
+				scan_count.setText("");
+				ed_jhxj_parentnum.setText("");
+				break;
+			case 3:
+//				mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//				mp.start();
+				MediaPlaye.error(mContext);
+				Toast.makeText(SZJHXJActivity.this, "子单号错误，请检查", Toast.LENGTH_SHORT).show();
+				ed_jhxj_parentnum.setEnabled(true);
+				ed_jhxj_find.setEnabled(true);
+				ed_jhxj_find.setText("");
+				ed_jhxj_find.setFocusable(true);
+				ed_jhxj_find.setFocusableInTouchMode(true);
+				ed_jhxj_find.requestFocus();
+				ed_jhxj_find.findFocus();
+				break;
+			case 4:
+				Toast.makeText(SZJHXJActivity.this, result_last, Toast.LENGTH_SHORT).show();
+				ed_jhxj_find.setText("");
+				ed_jhxj_parentnum.setEnabled(true);
+				ed_jhxj_find.setEnabled(true);
+				break;
+			case 7:
+//				mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//				mp.start();
+				MediaPlaye.error(mContext);
+				adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+				lv_jhxj.setAdapter(adapter);
+				Toast.makeText(SZJHXJActivity.this, "单号下架失败，请检查", Toast.LENGTH_SHORT).show();
+				ed_jhxj_find.setText("");
+				ed_jhxj_parentnum.setEnabled(true);
+				ed_jhxj_find.setEnabled(true);
+				scan_count.setText(parent_num + "下共有" + (billnum.size() - 1) + "条数据");
+				break;
+			
+			default:
+				break;
+			}
+		}
+	};
+	private MyAdapter adapter;
+	private String http;
+	private TextView scan_count;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.szactivity_jhxj);
+		billnum = new ArrayList<String>();
+		kuwei = new ArrayList<String>();
+		num = new ArrayList<String>();
+		agent = new ArrayList<String>();
+		weight = new ArrayList<String>();
+		shangjia = new ArrayList<String>();
+
+		initView();
+		SharedPreferences sha = getSharedPreferences("server", Activity.MODE_PRIVATE);
+		String enter = sha.getString("enter", "");
+		String port = sha.getString("port", "");
+		http = "http://" + enter + ":" + port;
+		OnClick();
+		OnItemClick();
+	}
+
+	private void OnItemClick() {
+		// TODO Auto-generated method stub
+		ed_jhxj_parentnum.setOnEditorActionListener(new OnEditorActionListener() {
+
+			@Override
+			public boolean onEditorAction(TextView arg0, int arg1, KeyEvent arg2) {
+				// TODO Auto-generated method stub
+				if (arg1 == 0 && arg2.getAction() == KeyEvent.ACTION_DOWN) {
+					ed_jhxj_find.setEnabled(false);
+					ed_jhxj_parentnum.setEnabled(false);
+					parent_num = ed_jhxj_parentnum.getText().toString();
+					if (parent_num.equals("")) {
+						ed_jhxj_parentnum.setEnabled(true);
+						ed_jhxj_find.setEnabled(true);
+						ed_jhxj_parentnum.setFocusable(true);
+						ed_jhxj_parentnum.setFocusableInTouchMode(true);
+						ed_jhxj_parentnum.requestFocus();
+						ed_jhxj_parentnum.findFocus();
+						ed_jhxj_parentnum.setText("");
+						Toast.makeText(SZJHXJActivity.this, "请输入正确的主单号", Toast.LENGTH_SHORT).show();
+//						mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//						mp.start();
+						MediaPlaye.error(mContext);
+					} else {
+						new Thread(new Runnable() {
+							public void run() {
+								msg = Message.obtain();
+								try {
+									String data = "out_barcode=" + parent_num;
+									URL url = new URL(http + "/pda/get_order_detail");
+									result_jhxj = PostUtil.loginByPost(url, data);
+									Log.e("1111", data);
+									Log.e("1111", result_jhxj);
+									msg.what = 1;
+								} catch (MalformedURLException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+								mhandler.sendMessage(msg);
+							}
+
+						}).start();
+					}
+				}
+				return true;
+			}
+		});
+
+		ed_jhxj_find.setOnEditorActionListener(new OnEditorActionListener() {
+
+			@Override
+			public boolean onEditorAction(TextView arg0, int arg1, KeyEvent arg2) {
+				// TODO Auto-generated method stub
+
+				if (arg1 == 0 && arg2.getAction() == KeyEvent.ACTION_DOWN) {
+					bill = ed_jhxj_find.getText().toString();
+					parent_num = ed_jhxj_parentnum.getText().toString();
+					ed_jhxj_parentnum.setEnabled(false);
+					ed_jhxj_find.setEnabled(false);
+					if (parent_num.equals("")) {
+						Toast.makeText(SZJHXJActivity.this, "主单号为空，请输入主单号", Toast.LENGTH_SHORT).show();
+						ed_jhxj_parentnum.setEnabled(true);
+						ed_jhxj_find.setEnabled(true);
+						ed_jhxj_parentnum.setFocusable(true);
+						ed_jhxj_parentnum.setFocusableInTouchMode(true);
+						ed_jhxj_parentnum.requestFocus();
+						ed_jhxj_parentnum.findFocus();
+						ed_jhxj_find.setText("");
+//						mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//						mp.start();
+						MediaPlaye.error(mContext);
+					} else if (bill.equals("")) {
+						Toast.makeText(SZJHXJActivity.this, "子单号为空，请输入正确的子单号", Toast.LENGTH_SHORT).show();
+						ed_jhxj_parentnum.setEnabled(true);
+						ed_jhxj_find.setEnabled(true);
+						ed_jhxj_find.setFocusable(true);
+						ed_jhxj_find.setFocusableInTouchMode(true);
+						ed_jhxj_find.requestFocus();
+						ed_jhxj_find.findFocus();
+//						mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//						mp.start();
+						MediaPlaye.error(mContext);
+					} else {
+						if (billnum.size() > 2) {
+							for (int i = 0; i < billnum.size(); i++) {
+								if (bill.equals(billnum.get(i))) {
+									billnum.remove(i);
+									kuwei.remove(i);
+									agent.remove(i);
+									weight.remove(i);
+									shangjia.remove(i);
+									num.remove(i);
+//									mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.ok);
+//									mp.start();
+									MediaPlaye.ok(mContext);
+									adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+									lv_jhxj.setAdapter(adapter);
+									ed_jhxj_find.setText("");
+									ed_jhxj_parentnum.setEnabled(true);
+									ed_jhxj_find.setEnabled(true);
+									scan_count.setText(parent_num + "下共有" + (billnum.size() - 1) + "条数据");
+									break;
+								}else if(i==(billnum.size()-1)){
+//									mp = MediaPlayer.create(SZJHXJActivity.this, R.raw.error);
+//									mp.start();
+									MediaPlaye.error(mContext);
+									adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+									lv_jhxj.setAdapter(adapter);
+									ed_jhxj_find.setText("");
+									ed_jhxj_parentnum.setEnabled(true);
+									ed_jhxj_find.setEnabled(true);
+									scan_count.setText(parent_num + "下共有" + (billnum.size() - 1) + "条数据");
+								}
+							}
+						} else if (billnum.size() == 2) {
+							new Thread(new Runnable() {
+								public void run() {
+									msg = Message.obtain();
+									String s = ed_jhxj_find.getText().toString();
+									if(s.equals(billnum.get(1))){
+									try {
+										URL url1 = new URL(http + "/pda/szjh");
+										String data2 = "out_barcode=" + parent_num + "&scan_site=" + site + "&scan_emp="
+												+ emp;
+										result_last = PostUtil.loginByPost(url1, data2);
+										JSONObject j1 = new JSONObject(result_last);
+										String state1 = j1.getString("State");
+										if (state1.equals("true")) {
+											msg.what = 2;
+										} else {
+											msg.what = 7;
+										}
+									} catch (MalformedURLException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+									
+									catch (Exception e) {
+
+										e.printStackTrace();
+										msg.what = 4;
+									}
+									}else{
+										msg.what = 3;
+									}
+									mhandler.sendMessage(msg);
+								}
+							}).start();
+						}else if(billnum.size()<2){
+							ed_jhxj_parentnum.setEnabled(true);
+							ed_jhxj_find.setEnabled(true);
+							Toast.makeText(SZJHXJActivity.this, "此父单号下无子单号", Toast.LENGTH_SHORT).show();
+							ed_jhxj_find.setText("");
+							billnum.clear();
+							kuwei.clear();
+							agent.clear();
+							weight.clear();
+							shangjia.clear();
+							num.clear();
+							adapter = new MyAdapter(SZJHXJActivity.this, billnum, kuwei, num, agent, weight, shangjia);
+							lv_jhxj.setAdapter(adapter);
+							ed_jhxj_parentnum.setFocusableInTouchMode(true);
+							ed_jhxj_parentnum.requestFocus();
+							ed_jhxj_parentnum.findFocus();
+							ed_jhxj_parentnum.setText("");
+						}
+
+						
+					}
+
+				}
+				return false;
+			}
+		});
+
+	}
+
+	private void OnClick() {
+		// TODO Auto-generated method stub
+		btn_back.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				finish();
+			}
+		});
+	}
+
+	private void initView() {
+		// TODO Auto-generated method stub
+		tv_info_menu = (TextView) findViewById(R.id.tv_info_menu);
+		scan_count = (TextView) findViewById(R.id.scan_count);
+		btn_back = (ImageView) findViewById(R.id.btn_back);
+		ed_jhxj_parentnum = (EditText) findViewById(R.id.ed_jhxj_parentnum);
+		lv_jhxj = (ListView) findViewById(R.id.lv_jhxj);
+		ed_jhxj_find = (EditText) findViewById(R.id.ed_jhxj_find);
+
+		PreferenceUtil.init(SZJHXJActivity.this);
+		String nickname = PreferenceUtil.getString("nickname", "");
+		String wavehouse = PreferenceUtil.getString("wavehouse_name", "");
+		tv_info_menu.setText(Langutil.langchange(SZJHXJActivity.this, R.string.user) + nickname + ","
+				+ Langutil.langchange(SZJHXJActivity.this, R.string.warehouse) + wavehouse);
+	}
+
+}
